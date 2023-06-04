@@ -1,93 +1,72 @@
-var createError = require("http-errors");
-var express = require("express");
-const helmet = require("helmet");
-var path = require("path");
-var logger = require("morgan");
-var bodyParser = require("body-parser");
-const expressValidator = require("express-validator");
-var passport = require("./services/passportconf");
-var app = express();
-const cors = require("cors");
+import express from "express";
+import bodyParser from "body-parser";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import multer from "multer";
+import helmet from "helmet";
+import morgan from "morgan";
+import path from "path";
+import { fileURLToPath } from "url";
+import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/users.js";
+import clientRoutes from "./routes/Client.js";
+import plansInternetRoute from "./routes/planInternet.js";
 
+import { register } from "./controllers/auth.js";
+// import User from "./models/User.js";
+// import { users, posts } from "./data/index.js";
+
+/* CONFIGURATIONS */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config();
+const app = express();
+app.use(express.json());
 app.use(helmet());
-app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, access-control-allow-origin"
-  );
-  next();
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+app.use(morgan("common"));
+app.use(bodyParser.json({ limit: "30mb", extended: true }));
+app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
+app.use(cors());
+app.use("/assets", express.static(path.join(__dirname, "public/assets")));
+
+ /* FILE STORAGE */
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "public/assets");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
 });
+const upload = multer({ storage });
 
-const corsOptions = {
-  origin: "*",
-};
-app.use(cors(corsOptions));
-app.use(expressValidator());
+/* ROUTES WITH FILES */
+app.post("/auth/register", upload.single("picture"), register);
 
-//database connection
-require("./services/connection");
+/* ROUTES */
+app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
+app.use("/api/v1/planes-internet", plansInternetRoute);
+app.use("/api/v1/clients", clientRoutes);
 
-//import files
-var publicRoutes = require("./routes/public");
-var login = require("./routes/login");
-var users = require("./routes/user");
+/* MONGOOSE SETUP */
+const PORT = process.env.PORT || 6001;
 
-//var adminLogin = require('./routes/adminLogin');
-//var admin = require('./routes/admin');
-var user = require("./routes/user");
+mongoose
+  .connect(process.env.ATLAS_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    maxPoolSize: 50,
+    wtimeoutMS: 2500,
+    dbName: "fiber_peru_billingDB",
+  })
+  .then(() => {
+    app.listen(PORT, () => console.log(`Server Port: ${PORT}`));
 
-//configs
-app.use(express.static(path.join(__dirname, "public")));
-app.use(logger("dev"));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-//passport
-app.use(passport.initialize());
-app.use(passport.session());
-
-//bind routes
-app.use('/api/v1/public',publicRoutes);
-app.use("/api/v1/login", login);
-app.use("/api/v1/users", users);
-
-
-//app.use('/api/v1/adminlogin',adminLogin);
-//app.use('/api/v1/admin',passport.authenticate('admin-token', {session:false}),admin);
-app.use(
-  "/api/v1/user",
-  passport.authenticate("user-token", { session: false }),
-  user
-);
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname + "/public/index.html"));
-});
-
-//error handlings
-app.use(function (req, res, next) {
-  next(
-    createError(
-      404,
-      "Invalid API. Use the official documentation to get the list of valid APIS."
-    )
-  );
-});
-
-app.use((err, req, res, next) => {
-  console.log(err);
-  res.status(err.status).json({
-    success: false,
-    message: err.message,
-  });
-});
-
-const PORT = process.env.PORT || 5001;
-
-app.listen(PORT, (err) => {
-  if (err) {
-    console.log(err);
-  }
-  console.log(`Server Started. Server listening to port ${PORT}`);
-});
+    /* ADD DATA ONE TIME */
+    // User.insertMany(users);
+    // Post.insertMany(posts);
+  })
+  .catch((error) => console.log(`${error} did not connect`));
