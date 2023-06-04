@@ -1,17 +1,7 @@
 import mongoose from "mongoose";
 
 const ClientSchema = new mongoose.Schema(
-  // { id: "fullName", label: "Nombre completo" },
-  // { id: "clientType", label: "Tipo cliente" },
-  // { id: "address", label: "Dirección" },
-  // { id: "district", label: "Distrito" },
-  // { id: "documentType", label: "Tipo documento" },
-  // { id: "documentNumber", label: "Numero documento" },
-  // { id: "telephone", label: "Telefono" },
-  // { id: "email", label: "Correo" },
-  // { id: "plan", label: "Plan" },
-  // { id: "observations", label: "Observaciones" },
-  // { id: "state", label: "Estado" },
+   
   {
     fullName: {
       type: String,
