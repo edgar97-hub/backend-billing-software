@@ -31,7 +31,7 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors());
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
- /* FILE STORAGE */
+/* FILE STORAGE */
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "public/assets");
@@ -52,10 +52,12 @@ app.use("/api/v1/planes-internet", plansInternetRoute);
 app.use("/api/v1/clients", clientRoutes);
 
 /* MONGOOSE SETUP */
-const PORT = process.env.PORT || 6001;
+const PORT = 5001;
+var url =
+  "mongodb+srv://edgar:Poly123.wqz@cluster0.xziwwxk.mongodb.net/?retryWrites=true&w=majority";
 
 mongoose
-  .connect(process.env.ATLAS_URI, {
+  .connect(url, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     maxPoolSize: 50,
